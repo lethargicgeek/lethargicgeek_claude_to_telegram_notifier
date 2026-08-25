@@ -258,6 +258,22 @@ You should receive both in Telegram, tagged with this machine's name + color.
 
 ---
 
+## Updating a machine
+
+When the project changes, refresh a machine with **one command** (or just tell
+Claude *"update the telegram notifier"*):
+
+```bash
+cd <your-checkout>
+bash update.sh          # git pull + refresh scripts + re-check hooks
+# then restart Claude Code
+```
+
+`update.sh` pulls the latest, copies the refreshed `telegram-notify.sh` /
+`detect-bg-color.sh` into `~/.claude/scripts/`, and re-ensures the hooks — while
+**leaving your `telegram-notify.conf` (token + identity) and swatch cache
+untouched.** New config options always have defaults, so old configs keep working.
+
 ## Adding another machine later
 
 1. Start your bot from that machine's Telegram account (if it's a different
@@ -279,6 +295,7 @@ You should receive both in Telegram, tagged with this machine's name + color.
 ## Files
 
 - `install.sh` — one-command installer (prereq check, token/chat-id, hooks, test)
+- `update.sh` — pull latest + refresh scripts/hooks (keeps your config)
 - `detect-bg-color.sh` — macOS desktop-background color detector (used by install.sh)
 - `telegram-notify.sh` — the notifier script (config-driven, identical on all machines)
 - `telegram-notify.conf.example` — config template (placeholders)
