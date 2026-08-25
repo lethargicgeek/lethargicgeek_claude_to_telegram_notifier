@@ -1,0 +1,24 @@
+# Example config: photo mode + exact color swatch + work fingerprint.
+# Install to: ~/.claude/scripts/telegram-notify.conf and edit for your machine.
+
+# --- Shared across ALL machines (single channel) ---
+TELEGRAM_TOKEN="<your-bot-token>"
+CHAT_ID="<your-chat-id>"
+
+# --- Unique to THIS machine ---
+MACHINE_NAME="mac-mini-03"
+
+# Any emoji/glyph to tag this machine in the alert.
+MACHINE_ICON="🖥️"
+
+# Any color: name shown verbatim; MACHINE_HEX gives the exact color.
+MACHINE_COLOR="salmon red"
+MACHINE_HEX="#E06C75"
+
+# photo = send a pixel-exact color swatch image (cached on disk after first render).
+NOTIFY_MODE="photo"
+
+# Lead each message with a per-branch/worktree emoji (hash of path+branch), x13.
+WORK_FINGERPRINT="1"
+WORK_EMOJI_REPEAT="13"
+# MACHINE_EMOJI=""   # optional: force a glyph (text mode only)

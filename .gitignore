@@ -1,0 +1,8 @@
+# Never commit a real config (contains bot token + chat id)
+telegram-notify.conf
+
+# Generated/cached color swatches
+swatch-*.png
+
+# macOS
+.DS_Store

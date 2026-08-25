@@ -1,0 +1,40 @@
+# Per-machine config for telegram-notify.sh
+# Copy to ~/.claude/scripts/telegram-notify.conf and edit per machine.
+# Sourced by bash: use KEY="value", no spaces around '='.
+
+# --- Shared across ALL machines (single channel) ---
+TELEGRAM_TOKEN="<your-bot-token>"        # from @BotFather
+CHAT_ID="<your-chat-id>"                 # your chat/channel id
+
+# --- Unique to THIS machine ---
+# A short name you'll recognize in Telegram.
+MACHINE_NAME="my-machine"
+
+# Any emoji/glyph to tag this machine, e.g. 🖥️ 💻 🖥 🚀 🐳 🍎. Leave empty for none.
+# (Standard emoji work everywhere; Telegram Premium "custom emoji" packs are not
+#  supported for bot messages.)
+MACHINE_ICON="💻"
+
+# Color identity. The NAME is free-text and shown verbatim (any color, any words).
+MACHINE_COLOR="slate blue"
+
+# Give a hex to match your desktop background exactly. The message glyph is
+# auto-picked as the nearest hue (red/orange/yellow/green/blue/purple/brown/
+# black/white) using HSV, so pastels/tints still map to the right family.
+MACHINE_HEX="#6A5ACD"
+
+# Rendering mode:
+#   "photo" -> pixel-exact color swatch image (rendered once, then cached on disk).
+#              Needs ImageMagick or python3+Pillow; falls back to text if absent.
+#   "text"  -> lightweight text alert with a nearest-hue emoji (default).
+NOTIFY_MODE="text"
+
+# Work fingerprint: lead each message with an emoji derived from a hash of
+# (folder path + git branch), repeated 5x — so every distinct branch/worktree
+# gets its own stable, unique emoji. Handy once you run several branches at once.
+WORK_FINGERPRINT="1"     # "0" to disable
+WORK_EMOJI_REPEAT="13"   # how many times to repeat the emoji
+
+# Optional: force a specific glyph in TEXT mode, ignoring MACHINE_HEX. Choices:
+#   🟥 🟧 🟨 🟩 🟦 🟪 🟫 ⬛ ⬜
+# MACHINE_EMOJI="🟦"
