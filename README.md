@@ -25,6 +25,31 @@ piece of work* pinged you.
 > ❓ Claude wants to run: git push --force
 > ```
 
+## Quick install
+
+**With Claude Code** — clone the repo and just ask:
+
+> "Install this repo on my machine."
+
+Claude runs `install.sh`, which asks for your bot token, auto-detects your chat
+id, wires the hooks, and sends a test message. You provide the token and restart
+Claude Code — that's it. (See the LLM note at the top of `install.sh`; an
+assistant should skim the files first to confirm intent.)
+
+**By hand:**
+
+```bash
+git clone https://github.com/lethargicgeek/lethargicgeek_claude_to_telegram_notifier.git
+cd lethargicgeek_claude_to_telegram_notifier
+bash install.sh          # prompts for token + machine identity, wires hooks, tests
+# then restart Claude Code
+```
+
+The only secret you supply is your **Telegram bot token** (from @BotFather). The
+installer derives the **chat id** for you from the bot, as long as you've sent
+the bot a message first. Everything else (manual steps, options, multi-machine)
+is documented below.
+
 ## Message format
 
 ```
@@ -226,6 +251,7 @@ You should receive both in Telegram, tagged with this machine's name + color.
 
 ## Files
 
+- `install.sh` — one-command installer (prereq check, token/chat-id, hooks, test)
 - `telegram-notify.sh` — the notifier script (config-driven, identical on all machines)
 - `telegram-notify.conf.example` — config template (placeholders)
 - `telegram-notify.conf.photo-example` — filled example: photo mode + swatch + fingerprint
