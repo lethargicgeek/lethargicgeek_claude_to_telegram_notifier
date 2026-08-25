@@ -154,6 +154,14 @@ working directory is a git repo** — it runs `git rev-parse --abbrev-ref HEAD` 
 that directory. In a non-repo folder there's simply no branch, so the line is
 omitted.
 
+## Message length
+
+How much of Claude's message is shown is set by `MAX_MSG_CHARS` (default `1200`)
+— this is the notifier's own cap, **not** a Telegram limit. It's auto-clamped to
+Telegram's ceilings: up to **3800** chars in text mode and **850** in photo mode
+(Telegram allows 4096 for a text message but only 1024 for a photo caption).
+Longer messages are truncated with an `…`.
+
 ## Reliability
 
 All dynamic text (Claude's message, paths, branch) is **MarkdownV2-escaped**, so

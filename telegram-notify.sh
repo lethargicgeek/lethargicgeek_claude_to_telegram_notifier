@@ -45,6 +45,20 @@ NOTIFY_MODE="${NOTIFY_MODE:-text}"
 WORK_FINGERPRINT="${WORK_FINGERPRINT:-1}"
 WORK_EMOJI_REPEAT="${WORK_EMOJI_REPEAT:-9}"
 
+# How much of Claude's message to include. This is OUR cap, not Telegram's
+# (Telegram allows 4096 chars for text, 1024 for a photo caption). Clamped below
+# to stay under those ceilings — photo mode is the tighter one.
+MAX_MSG_CHARS="${MAX_MSG_CHARS:-1200}"
+case "$MAX_MSG_CHARS" in ''|*[!0-9]*) MAX_MSG_CHARS=1200;; esac
+if [ "$NOTIFY_MODE" = "photo" ]; then __ceil=850; else __ceil=3800; fi
+[ "$MAX_MSG_CHARS" -gt "$__ceil" ] && MAX_MSG_CHARS="$__ceil"
+
+# Truncate to N chars, appending an ellipsis only when actually shortened.
+trunc() {
+  local s="$1" n="$2"
+  if [ "${#s}" -gt "$n" ]; then printf '%s…' "$(printf '%s' "$s" | cut -c1-"$n")"; else printf '%s' "$s"; fi
+}
+
 # Normalize hex: strip '#', expand 3-digit shorthand -> 6-digit.
 HEXCLEAN="${MACHINE_HEX#\#}"
 if [ ${#HEXCLEAN} -eq 3 ]; then
@@ -176,7 +190,7 @@ SESSION_MSG=$(echo "$INPUT" | jq -r '.message // ""')
 
 LAST_MSG=""
 if [ -f "$TRANSCRIPT_PATH" ]; then
-  LAST_MSG=$(jq -rs '[.[] | select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text] | last // ""' "$TRANSCRIPT_PATH" 2>/dev/null | tr '\n' ' ' | cut -c1-300)
+  LAST_MSG=$(jq -rs '[.[] | select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text] | last // ""' "$TRANSCRIPT_PATH" 2>/dev/null | tr '\n' ' ')
 fi
 
 if [ "$HOOK_EVENT" = "Stop" ]; then
@@ -189,6 +203,10 @@ else
   HEADER="⏳ waiting for you"
   PROMPT_LINE="${SESSION_MSG:-${LAST_MSG:-Idle and waiting for input}}"
 fi
+
+# Apply the message-length cap (ours, not Telegram's).
+PROMPT_LINE="$(trunc "$PROMPT_LINE" "$MAX_MSG_CHARS")"
+LAST_MSG="$(trunc "$LAST_MSG" "$MAX_MSG_CHARS")"
 
 # --- MarkdownV2 escaping ----------------------------------------------------
 esc() {

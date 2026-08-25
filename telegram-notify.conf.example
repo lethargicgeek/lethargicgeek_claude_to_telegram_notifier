@@ -35,6 +35,10 @@ NOTIFY_MODE="text"
 WORK_FINGERPRINT="1"     # "0" to disable
 WORK_EMOJI_REPEAT="9"    # how many times to repeat the emoji
 
+# How much of Claude's message to include (our cap, not Telegram's). Auto-clamped
+# to Telegram limits: <=3800 in text mode, <=850 in photo mode (caption limit).
+MAX_MSG_CHARS="1200"
+
 # Optional: force a specific glyph in TEXT mode, ignoring MACHINE_HEX. Choices:
 #   🟥 🟧 🟨 🟩 🟦 🟪 🟫 ⬛ ⬜
 # MACHINE_EMOJI="🟦"
