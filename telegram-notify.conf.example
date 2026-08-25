@@ -33,7 +33,7 @@ NOTIFY_MODE="text"
 # (folder path + git branch), repeated 5x — so every distinct branch/worktree
 # gets its own stable, unique emoji. Handy once you run several branches at once.
 WORK_FINGERPRINT="1"     # "0" to disable
-WORK_EMOJI_REPEAT="13"   # how many times to repeat the emoji
+WORK_EMOJI_REPEAT="9"    # how many times to repeat the emoji
 
 # Optional: force a specific glyph in TEXT mode, ignoring MACHINE_HEX. Choices:
 #   🟥 🟧 🟨 🟩 🟦 🟪 🟫 ⬛ ⬜

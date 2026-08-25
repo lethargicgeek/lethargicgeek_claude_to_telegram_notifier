@@ -18,7 +18,7 @@ MACHINE_HEX="#E06C75"
 # photo = send a pixel-exact color swatch image (cached on disk after first render).
 NOTIFY_MODE="photo"
 
-# Lead each message with a per-branch/worktree emoji (hash of path+branch), x13.
+# Lead each message with a per-branch/worktree emoji (hash of path+branch), x9.
 WORK_FINGERPRINT="1"
-WORK_EMOJI_REPEAT="13"
+WORK_EMOJI_REPEAT="9"
 # MACHINE_EMOJI=""   # optional: force a glyph (text mode only)

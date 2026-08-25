@@ -18,7 +18,7 @@ piece of work* pinged you.
 > One channel, many machines. A message looks like:
 >
 > ```
-> ⚾⚾⚾⚾⚾⚾⚾⚾⚾⚾⚾⚾⚾
+> ⚾⚾⚾⚾⚾⚾⚾⚾⚾
 > 🟥 🖥️ mac-mini-03 · salmon red (#E06C75) — 🔐 needs permission
 > 📁 myproject
 > 🌿 feature/payments-v2
@@ -83,10 +83,10 @@ emoji of your choice, not an animated pack sticker.
 ## Work fingerprint (per branch/worktree emoji)
 
 With `WORK_FINGERPRINT="1"` (default), each message **leads with an emoji derived
-from a hash of `folder-path + git-branch`**, repeated 13× (`WORK_EMOJI_REPEAT`):
+from a hash of `folder-path + git-branch`**, repeated 9× (`WORK_EMOJI_REPEAT`):
 
 ```
-🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉
+🦉🦉🦉🦉🦉🦉🦉🦉🦉
 🟥 🖥️ mac-mini-03 · salmon red (#E06C75) — 🔐 needs permission
 📁 myproject
 🌿 feature/auth

@@ -43,7 +43,7 @@ fi
 MACHINE_NAME="${MACHINE_NAME:-$(hostname -s 2>/dev/null || hostname)}"
 NOTIFY_MODE="${NOTIFY_MODE:-text}"
 WORK_FINGERPRINT="${WORK_FINGERPRINT:-1}"
-WORK_EMOJI_REPEAT="${WORK_EMOJI_REPEAT:-13}"
+WORK_EMOJI_REPEAT="${WORK_EMOJI_REPEAT:-9}"
 
 # Normalize hex: strip '#', expand 3-digit shorthand -> 6-digit.
 HEXCLEAN="${MACHINE_HEX#\#}"
@@ -212,7 +212,7 @@ ICON_SEG=""
 FP_LINE=""
 if [ "$WORK_FINGERPRINT" = "1" ]; then
   WE=$(work_emoji "${PWD}|${GIT_BRANCH}")
-  reps="$WORK_EMOJI_REPEAT"; case "$reps" in ''|*[!0-9]*) reps=13;; esac
+  reps="$WORK_EMOJI_REPEAT"; case "$reps" in ''|*[!0-9]*) reps=9;; esac
   fp=""; i=0; while [ "$i" -lt "$reps" ]; do fp="${fp}${WE}"; i=$((i+1)); done
   FP_LINE="${fp}"$'\n'
 fi
