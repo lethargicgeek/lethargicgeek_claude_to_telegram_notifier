@@ -92,6 +92,25 @@ automatically.
 - `NOTIFY_MODE="text"` (default) keeps the lightweight text alert with a
   nearest-hue emoji instead.
 
+## Auto-detecting the background color (macOS)
+
+`install.sh` runs `detect-bg-color.sh` to pre-fill the color from your desktop
+wallpaper:
+
+- **Image wallpaper** → the exact **average color** (a hex) is detected and
+  offered as the default; photo mode is preselected.
+- **Solid color** → macOS stores only the color's **name** (e.g. `dusty rose`),
+  not an RGB value, so the name is auto-filled and you confirm/paste the hex.
+
+You can always override the detected value. Run it standalone anytime:
+
+```bash
+./detect-bg-color.sh            # inspect the live desktop
+./detect-bg-color.sh img.jpg    # average a specific image
+```
+
+(macOS only; it's read-only and makes no network calls.)
+
 ## Per-machine icon
 
 Set `MACHINE_ICON` to any emoji/glyph (🖥️ 💻 🚀 🐳 🍎 …) and it leads the header,
@@ -252,6 +271,7 @@ You should receive both in Telegram, tagged with this machine's name + color.
 ## Files
 
 - `install.sh` — one-command installer (prereq check, token/chat-id, hooks, test)
+- `detect-bg-color.sh` — macOS desktop-background color detector (used by install.sh)
 - `telegram-notify.sh` — the notifier script (config-driven, identical on all machines)
 - `telegram-notify.conf.example` — config template (placeholders)
 - `telegram-notify.conf.photo-example` — filled example: photo mode + swatch + fingerprint

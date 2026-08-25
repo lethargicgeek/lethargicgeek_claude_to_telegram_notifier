@@ -131,11 +131,22 @@ fi
 
 # --- 3. This machine's display identity -------------------------------------
 say "③ This machine's identity (shown in every notification)"
+
+# Try to auto-detect the desktop background color (macOS). For an image
+# wallpaper this yields an exact hex; for a solid color it yields the color's
+# name (macOS exposes no hex for solids). Detected values become the prompt
+# defaults, which you can accept or override.
+DETECTED_HEX=""; DETECTED_COLOR=""
+if [ -x "$SCRIPT_DIR/detect-bg-color.sh" ]; then
+  eval "$("$SCRIPT_DIR/detect-bg-color.sh" 2>/dev/null || true)"
+fi
+
 ask MACHINE_NAME  "   Machine name [$(hostname -s 2>/dev/null || hostname)]: " "$(hostname -s 2>/dev/null || hostname)"
-ask MACHINE_COLOR "   Color name (e.g. 'salmon red') []: " ""
-ask MACHINE_HEX   "   Background hex (e.g. #E06C75) []: " ""
+ask MACHINE_COLOR "   Color name${DETECTED_COLOR:+ [$DETECTED_COLOR]}: " "$DETECTED_COLOR"
+ask MACHINE_HEX   "   Background hex${DETECTED_HEX:+ [$DETECTED_HEX]}: " "$DETECTED_HEX"
 ask MACHINE_ICON  "   Machine icon emoji (e.g. 🖥️) []: " ""
-ask NOTIFY_MODE   "   Mode — 'photo' (exact-color image) or 'text' [text]: " "text"
+# Default to photo mode when we have an exact hex, else text.
+ask NOTIFY_MODE   "   Mode — 'photo' (exact-color image) or 'text' [${MACHINE_HEX:+photo}${MACHINE_HEX:-text}]: " "$([ -n "${MACHINE_HEX:-}" ] && echo photo || echo text)"
 
 # --- 4. Write the config (secrets live here; chmod 600; never committed) -----
 say "④ Writing $CONF"
