@@ -15,12 +15,12 @@ MACHINE_NAME="my-machine"
 #  supported for bot messages.)
 MACHINE_ICON="💻"
 
-# Color identity. The NAME is free-text and shown verbatim (any color, any words).
+# A human label for your own reference. NOT shown in messages.
 MACHINE_COLOR="slate blue"
 
-# Give a hex to match your desktop background exactly. The message glyph is
-# auto-picked as the nearest hue (red/orange/yellow/green/blue/purple/brown/
-# black/white) using HSV, so pastels/tints still map to the right family.
+# The machine's color. In photo mode this fills the exact-color swatch image; in
+# text mode it picks the nearest-hue square. The hex is never shown in the
+# message — the color is conveyed visually. Match it to your desktop background.
 MACHINE_HEX="#6A5ACD"
 
 # Rendering mode:

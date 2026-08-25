@@ -11,7 +11,7 @@
 #   TELEGRAM_TOKEN  - bot token (same on every machine, single shared channel)
 #   CHAT_ID         - the one shared chat/channel id
 #   MACHINE_NAME    - human label for THIS machine, e.g. "mac-mini-03"
-#   MACHINE_COLOR   - free-text color name, e.g. "salmon red"  (any color, shown in msg)
+#   MACHINE_COLOR   - free-text color label for reference only (NOT shown in messages)
 # Optional:
 #   MACHINE_ICON    - any emoji/glyph to tag this machine, e.g. "🖥️" or "🚀"
 #   WORK_FINGERPRINT- "1" (default) leads each msg with an emoji derived from a hash
@@ -136,13 +136,15 @@ ensure_swatch() {
   r=$((16#${hex:0:2})); g=$((16#${hex:2:2})); b=$((16#${hex:4:2}))
   lum=$(( (299*r + 587*g + 114*b) / 1000 ))   # perceived brightness
   txt="white"; [ "$lum" -gt 150 ] && txt="black"
+  # The swatch is a clean color block labeled only with the machine name — the
+  # color itself is the message; no hex is printed.
   if command -v magick >/dev/null 2>&1; then
     magick -size 640x220 xc:"#$hex" -gravity center -fill "$txt" \
-      -pointsize 46 -annotate +0-20 "$name" -pointsize 28 -annotate +0+36 "#$hex" "$out" 2>/dev/null && return 0
+      -pointsize 52 -annotate +0+0 "$name" "$out" 2>/dev/null && return 0
   fi
   if command -v convert >/dev/null 2>&1; then
     convert -size 640x220 xc:"#$hex" -gravity center -fill "$txt" \
-      -pointsize 46 -annotate +0-20 "$name" -pointsize 28 -annotate +0+36 "#$hex" "$out" 2>/dev/null && return 0
+      -pointsize 52 -annotate +0+0 "$name" "$out" 2>/dev/null && return 0
   fi
   if command -v python3 >/dev/null 2>&1; then
     python3 - "$hex" "$name" "$out" "$txt" <<'PY' 2>/dev/null && return 0
@@ -157,9 +159,9 @@ def font(sz):
         try: return ImageFont.truetype(p, sz)
         except Exception: pass
     return ImageFont.load_default()
-for text, f, dy in ((name, font(46), -20), ("#"+hx, font(28), 36)):
-    bb = d.textbbox((0, 0), text, font=f); w = bb[2]-bb[0]; h = bb[3]-bb[1]
-    d.text(((640-w)/2, (220-h)/2+dy), text, fill=txt, font=f)
+f = font(52)
+bb = d.textbbox((0, 0), name, font=f); w = bb[2]-bb[0]; h = bb[3]-bb[1]
+d.text(((640-w)/2, (220-h)/2), name, fill=txt, font=f)
 img.save(out)
 PY
   fi
@@ -172,11 +174,6 @@ elif [ -n "$HEXCLEAN" ]; then
   EMOJI="$(pick_emoji "$HEXCLEAN")"
 else
   EMOJI="⬜"
-fi
-
-COLOR_DISP="$MACHINE_COLOR"
-if [ -n "$MACHINE_HEX" ]; then
-  [ -n "$COLOR_DISP" ] && COLOR_DISP="$COLOR_DISP ($MACHINE_HEX)" || COLOR_DISP="$MACHINE_HEX"
 fi
 
 CONTEXT_PATH=$(echo "$PWD" | rev | cut -d"/" -f1-2 | rev)
@@ -215,17 +212,18 @@ esc() {
 
 E_NAME=$(esc "$MACHINE_NAME")
 E_ICON=$(esc "$MACHINE_ICON")
-E_COLOR=$(esc "$COLOR_DISP")
 E_HEADER=$(esc "$HEADER")
 E_PATH=$(esc "$CONTEXT_PATH")
 E_BRANCH=$(esc "$GIT_BRANCH")
 E_PROMPT=$(esc "$PROMPT_LINE")
 E_LAST=$(esc "$LAST_MSG")
 
-COLOR_SEG=""
-[ -n "$COLOR_DISP" ] && COLOR_SEG=" · ${E_COLOR}"
 ICON_SEG=""
 [ -n "$MACHINE_ICON" ] && ICON_SEG="${E_ICON} "
+# The color square is only useful in text mode; in photo mode the swatch image
+# already conveys the color, so we drop it. Color name / hex are never shown.
+SQUARE_SEG=""
+[ "$NOTIFY_MODE" != "photo" ] && SQUARE_SEG="${EMOJI} "
 
 FP_LINE=""
 if [ "$WORK_FINGERPRINT" = "1" ]; then
@@ -235,7 +233,7 @@ if [ "$WORK_FINGERPRINT" = "1" ]; then
   FP_LINE="${fp}"$'\n'
 fi
 
-TEXT="${FP_LINE}${EMOJI} ${ICON_SEG}*${E_NAME}*${COLOR_SEG} — ${E_HEADER}
+TEXT="${FP_LINE}${SQUARE_SEG}${ICON_SEG}*${E_NAME}* — ${E_HEADER}
 📁 ${E_PATH}"
 [ -n "$GIT_BRANCH" ] && TEXT="${TEXT}
 🌿 ${E_BRANCH}"
@@ -255,7 +253,9 @@ send_text() {
 SENT=0
 if [ "$NOTIFY_MODE" = "photo" ] && [ -n "$HEXCLEAN" ]; then
   NAMESLUG=$(printf '%s' "$MACHINE_NAME" | tr -c 'A-Za-z0-9' '_')
-  SWATCH="${SWATCH_FILE:-$HOME/.claude/scripts/swatch-${HEXCLEAN}-${NAMESLUG}.png}"
+  # "-n" (name-only) marks the current swatch scheme; bumping it regenerates
+  # cached swatches when the drawing changes.
+  SWATCH="${SWATCH_FILE:-$HOME/.claude/scripts/swatch-${HEXCLEAN}-${NAMESLUG}-n.png}"
   if ensure_swatch "$HEXCLEAN" "$MACHINE_NAME" "$SWATCH"; then
     RESP=$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto" \
       -F chat_id="$CHAT_ID" -F parse_mode="MarkdownV2" \

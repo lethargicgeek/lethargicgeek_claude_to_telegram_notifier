@@ -8,8 +8,8 @@ piece of work* pinged you.
 
 - **Fires only when you're needed:** 🔐 needs permission / ⏳ waiting for you
   (no per-turn "finished" spam).
-- **Per-machine identity:** name, an icon, and a color (nearest-hue emoji, or a
-  pixel-exact color swatch image).
+- **Per-machine identity:** name, an icon, and a color shown visually (a nearest-hue
+  square in text mode, or a pixel-exact color swatch image in photo mode).
 - **Per-work fingerprint:** an emoji derived from a hash of folder path + git branch,
   so each branch/worktree gets its own stable banner.
 - **One script, many machines:** all machine-specific values live in a small config
@@ -19,7 +19,7 @@ piece of work* pinged you.
 >
 > ```
 > ⚾⚾⚾⚾⚾⚾⚾⚾⚾
-> 🟥 🖥️ mac-mini-03 · salmon red (#E06C75) — 🔐 needs permission
+> 🖥️ mac-mini-03 — 🔐 needs permission
 > 📁 myproject
 > 🌿 feature/payments-v2
 > ❓ Claude wants to run: git push --force
@@ -63,34 +63,27 @@ is documented below.
 The colored square matches that machine's desktop background so you can identify
 the source at a glance.
 
-## Color support (wide range)
+## Color
 
-Telegram message text can't be arbitrarily colored, so color has two parts:
+The color is conveyed **visually, never as text** — the message itself never
+prints a color name or hex. `MACHINE_HEX` drives how color is shown:
 
-- **Exact color, unlimited** — `MACHINE_COLOR` is free text and shown verbatim,
-  and `MACHINE_HEX` (e.g. `#FFB3B3`) is printed too. Any color, any name.
-- **The glyph** — auto-picked as the *nearest hue* of your hex using HSV, from the
-  9 colored squares Telegram provides (🟥🟧🟨🟩🟦🟪🟫⬛⬜). HSV (not raw RGB) means
-  pastels/tints still map to the right family — `#FFB3B3` → 🟥, `#B2F2BB` → 🟩,
-  `#B39DDB` → 🟪. Set `MACHINE_EMOJI` to force a specific glyph instead.
+- **Photo mode** (`NOTIFY_MODE="photo"`) — each notification is a **pixel-exact
+  color swatch image** filled with `MACHINE_HEX`, labeled only with the machine
+  name (no hex on it). This is the only way Telegram can render an exact color.
+- **Text mode** (`NOTIFY_MODE="text"`, default) — the message leads with a small
+  colored square, auto-picked as the *nearest hue* of your hex using HSV, from the
+  9 Telegram provides (🟥🟧🟨🟩🟦🟪🟫⬛⬜). HSV (not raw RGB) keeps pastels on the
+  right family — `#FFB3B3` → 🟥, `#B2F2BB` → 🟩. Set `MACHINE_EMOJI` to force one.
 
-So each machine's color identity is effectively unlimited (name + hex in text);
-only the little square is snapped to the nearest of 9 hues.
-
-## Exact color: photo mode
-
-Set `NOTIFY_MODE="photo"` and give a `MACHINE_HEX`, and each notification is sent
-as a **pixel-exact color swatch image** (the alert text becomes the caption) — the
-only way Telegram can render an exact color. The swatch (color + machine name +
-hex) is **rendered once and cached** on disk at
-`~/.claude/scripts/swatch-<HEX>-<machine>.png`, then re-sent on every ping, so
+The swatch is **rendered once and cached** at
+`~/.claude/scripts/swatch-<HEX>-<machine>-n.png`, then re-sent on every ping, so
 there's no per-notification image cost. Change the hex and a new swatch is built
-automatically.
+automatically. Photo mode needs **ImageMagick** or **python3 + Pillow**; if
+neither is present (or a send fails) it falls back to a text alert.
 
-- Needs **ImageMagick** (`magick`/`convert`) or **python3 + Pillow**. If neither is
-  present, or the photo send fails, it silently falls back to a text alert.
-- `NOTIFY_MODE="text"` (default) keeps the lightweight text alert with a
-  nearest-hue emoji instead.
+`MACHINE_COLOR` is now just a human label you can keep in your config for
+reference / background detection — it is not shown in messages.
 
 ## Auto-detecting the background color (macOS)
 
@@ -117,7 +110,7 @@ Set `MACHINE_ICON` to any emoji/glyph (🖥️ 💻 🚀 🐳 🍎 …) and it l
 so each machine has both a color and an icon:
 
 ```
-🟥 🖥️ mac-mini-03 · salmon red (#E06C75) — 🔐 needs permission
+🖥️ mac-mini-03 — 🔐 needs permission
 ```
 
 Standard Unicode emoji work everywhere and are free. Telegram Premium "custom
@@ -131,7 +124,7 @@ from a hash of `folder-path + git-branch`**, repeated 9× (`WORK_EMOJI_REPEAT`):
 
 ```
 🦉🦉🦉🦉🦉🦉🦉🦉🦉
-🟥 🖥️ mac-mini-03 · salmon red (#E06C75) — 🔐 needs permission
+🖥️ mac-mini-03 — 🔐 needs permission
 📁 myproject
 🌿 feature/auth
 ❓ Claude wants to run: npm run deploy
