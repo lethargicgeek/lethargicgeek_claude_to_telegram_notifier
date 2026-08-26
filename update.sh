@@ -63,6 +63,10 @@ if command -v jq >/dev/null 2>&1 && [ -f "$SETTINGS" ]; then
         + [ {matcher:"permission_prompt", hooks:[{type:"command", command:$cmd}]},
             {matcher:"idle_prompt",       hooks:[{type:"command", command:$cmd}]} ]
       )
+    | .hooks.Stop = (
+        (((.hooks.Stop // []) | keep))
+        + [ {matcher:"", hooks:[{type:"command", command:$cmd}]} ]
+      )
   ' "$SETTINGS" > "$TMP" && mv "$TMP" "$SETTINGS" && say "   ✓ hooks present" \
     || warn "couldn't update settings.json (restored backup at $SETTINGS.bak)"
 else

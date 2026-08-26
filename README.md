@@ -6,8 +6,9 @@ for running Claude across several machines and branches through **one shared Tel
 channel**, where each message is tagged so you can tell *which machine* and *which
 piece of work* pinged you.
 
-- **Fires only when you're needed:** 🔐 needs permission / ⏳ waiting for you
-  (no per-turn "finished" spam).
+- **Fires when it's your turn:** ✅ the main agent finished (`Stop`), 🔐 needs
+  permission, or ⏳ idle waiting on you. Subagents (`SubagentStop`) are **not**
+  hooked, so you only hear from the top-level orchestrator — no subagent noise.
 - **Per-machine identity:** name, an icon, and a color shown visually (a nearest-hue
   square in text mode, or a pixel-exact color swatch image in photo mode).
 - **Per-work fingerprint:** an emoji derived from a hash of folder path + git branch,
@@ -74,15 +75,18 @@ The color is conveyed **visually, never as text** — the message itself never
 prints a color name or hex. `MACHINE_HEX` drives how color is shown:
 
 - **Photo mode** (`NOTIFY_MODE="photo"`) — each notification is a **pixel-exact
-  color swatch image** filled with `MACHINE_HEX`, labeled only with the machine
-  name (no hex on it). This is the only way Telegram can render an exact color.
+  color swatch image** filled with `MACHINE_HEX`. The left 2/3 shows the machine
+  name on the color; the right 1/3 is a status panel with a glyph for the state:
+  `√` done (main agent finished), `?` needs an answer (permission), `…` idle
+  waiting. This is the only way Telegram can render an exact color.
 - **Text mode** (`NOTIFY_MODE="text"`, default) — the message leads with a small
   colored square, auto-picked as the *nearest hue* of your hex using HSV, from the
   9 Telegram provides (🟥🟧🟨🟩🟦🟪🟫⬛⬜). HSV (not raw RGB) keeps pastels on the
   right family — `#FFB3B3` → 🟥, `#B2F2BB` → 🟩. Set `MACHINE_EMOJI` to force one.
 
 The swatch is **rendered once and cached** at
-`~/.claude/scripts/swatch-<HEX>-<machine>-n.png`, then re-sent on every ping, so
+`~/.claude/scripts/swatch-<HEX>-<machine>-<status>.png` (one per state), then
+re-sent on every ping, so
 there's no per-notification image cost. Change the hex and a new swatch is built
 automatically. Photo mode needs **ImageMagick** or **python3 + Pillow**; if
 neither is present (or a send fails) it falls back to a text alert.
@@ -140,6 +144,25 @@ How much of Claude's message is shown is set by `MAX_MSG_CHARS` (default `1200`)
 Telegram's ceilings: up to **3800** chars in text mode and **850** in photo mode
 (Telegram allows 4096 for a text message but only 1024 for a photo caption).
 Longer messages are truncated with an `…`.
+
+## Notification triggers
+
+The hooks (in `settings-hooks-snippet.json`) listen to three Claude Code events:
+
+| Event | Matcher | Meaning | Photo status |
+|-------|---------|---------|--------------|
+| `Notification` | `permission_prompt` | a tool needs your approval | `?` |
+| `Notification` | `idle_prompt` | idle ~60s, waiting on your input | `…` |
+| `Stop` | (any) | the **main agent** finished its turn | `√` |
+
+`Stop` fires **only for the top-level agent** — Task-tool subagents fire a
+separate `SubagentStop` event, which is intentionally **not** hooked, so you never
+get pinged for subagent completions. `Stop` also never fires on an Esc-interrupt
+(API errors fire `StopFailure`).
+
+A per-session **debounce** (`NOTIFY_DEBOUNCE_SECONDS`, default 6) collapses
+near-simultaneous events so e.g. a permission ping immediately followed by a
+`Stop` doesn't double-notify.
 
 ## Reliability
 

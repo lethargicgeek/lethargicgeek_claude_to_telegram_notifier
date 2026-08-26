@@ -192,7 +192,7 @@ if [ -f "$SETTINGS" ]; then
 fi
 TMP="$(mktemp)"
 printf '%s' "$BASE" | jq --arg cmd "$HOOK_CMD" '
-  # keep: drop any Notification entries that already reference our script
+  # keep: drop any entries that already reference our script (idempotent)
   def keep: map(select(([.hooks[]?.command] | index($cmd)) | not));
   .hooks = (.hooks // {})
   | .hooks.Notification = (
@@ -200,9 +200,15 @@ printf '%s' "$BASE" | jq --arg cmd "$HOOK_CMD" '
       + [ {matcher:"permission_prompt", hooks:[{type:"command", command:$cmd}]},
           {matcher:"idle_prompt",       hooks:[{type:"command", command:$cmd}]} ]
     )
+  # Stop fires only for the MAIN agent (subagents fire SubagentStop, which we do
+  # NOT hook) — so this pings only on the top-level orchestrator finishing.
+  | .hooks.Stop = (
+      (((.hooks.Stop // []) | keep))
+      + [ {matcher:"", hooks:[{type:"command", command:$cmd}]} ]
+    )
 ' > "$TMP" || die "Failed to update settings.json (is it valid JSON?)."
 mv "$TMP" "$SETTINGS"
-say "   ✓ hooks installed (permission_prompt + idle_prompt)"
+say "   ✓ hooks installed (Notification: permission_prompt + idle_prompt; Stop: main agent)"
 
 # --- 7. Send a test message --------------------------------------------------
 if [ "${SKIP_TEST:-0}" != "1" ]; then

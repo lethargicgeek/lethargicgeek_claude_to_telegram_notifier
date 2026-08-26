@@ -130,38 +130,49 @@ work_emoji() {
 
 # --- Exact-color swatch image (photo mode), cached on disk -------------------
 ensure_swatch() {
-  local hex="$1" name="$2" out="$3"
+  local hex="$1" name="$2" out="$3" glyph="$4"
   [ -f "$out" ] && return 0
-  local r g b lum txt
+  local r g b lum txt dr dg db dark
   r=$((16#${hex:0:2})); g=$((16#${hex:2:2})); b=$((16#${hex:4:2}))
   lum=$(( (299*r + 587*g + 114*b) / 1000 ))   # perceived brightness
   txt="white"; [ "$lum" -gt 150 ] && txt="black"
-  # The swatch is a clean color block labeled only with the machine name — the
-  # color itself is the message; no hex is printed.
+  # Right third is a slightly darker shade of the color, to set off the status.
+  dr=$((r*72/100)); dg=$((g*72/100)); db=$((b*72/100))
+  dark=$(printf '%02X%02X%02X' "$dr" "$dg" "$db")
+  # Layout (660x220): left 2/3 = color + machine name; right 1/3 = status glyph.
+  # No hex printed — the color itself is the signal.
   if command -v magick >/dev/null 2>&1; then
-    magick -size 640x220 xc:"#$hex" -gravity center -fill "$txt" \
-      -pointsize 52 -annotate +0+0 "$name" "$out" 2>/dev/null && return 0
+    magick -size 660x220 xc:"#$hex" -fill "#$dark" -draw "rectangle 440,0 660,220" \
+      -gravity center -fill "$txt" \
+      -pointsize 44 -annotate -110+0 "$name" \
+      -pointsize 140 -annotate +218+0 "$glyph" "$out" 2>/dev/null && return 0
   fi
   if command -v convert >/dev/null 2>&1; then
-    convert -size 640x220 xc:"#$hex" -gravity center -fill "$txt" \
-      -pointsize 52 -annotate +0+0 "$name" "$out" 2>/dev/null && return 0
+    convert -size 660x220 xc:"#$hex" -fill "#$dark" -draw "rectangle 440,0 660,220" \
+      -gravity center -fill "$txt" \
+      -pointsize 44 -annotate -110+0 "$name" \
+      -pointsize 140 -annotate +218+0 "$glyph" "$out" 2>/dev/null && return 0
   fi
   if command -v python3 >/dev/null 2>&1; then
-    python3 - "$hex" "$name" "$out" "$txt" <<'PY' 2>/dev/null && return 0
+    python3 - "$hex" "$name" "$out" "$txt" "$glyph" <<'PY' 2>/dev/null && return 0
 import sys
 from PIL import Image, ImageDraw, ImageFont
-hx, name, out, txt = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
-img = Image.new("RGB", (640, 220), "#"+hx)
+hx, name, out, txt, glyph = sys.argv[1:6]
+img = Image.new("RGB", (660, 220), "#"+hx)
 d = ImageDraw.Draw(img)
+base = img.getpixel((0, 0))
+d.rectangle([440, 0, 660, 220], fill=tuple(int(c*0.72) for c in base))
 def font(sz):
     for p in ("/System/Library/Fonts/Supplemental/Arial Bold.ttf",
               "/System/Library/Fonts/SFNS.ttf"):
         try: return ImageFont.truetype(p, sz)
         except Exception: pass
     return ImageFont.load_default()
-f = font(52)
-bb = d.textbbox((0, 0), name, font=f); w = bb[2]-bb[0]; h = bb[3]-bb[1]
-d.text(((640-w)/2, (220-h)/2), name, fill=txt, font=f)
+def centered(text, sz, cx):
+    f = font(sz); bb = d.textbbox((0, 0), text, font=f)
+    d.text((cx-(bb[2]-bb[0])/2, 110-(bb[3]-bb[1])/2-bb[1]), text, fill=txt, font=f)
+centered(name, 44, 220)     # left 2/3
+centered(glyph, 140, 550)   # right 1/3
 img.save(out)
 PY
   fi
@@ -184,20 +195,39 @@ HOOK_EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // "Notification"')
 NOTIFICATION_TYPE=$(echo "$INPUT" | jq -r '.notification_type // "idle_prompt"')
 TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // ""')
 SESSION_MSG=$(echo "$INPUT" | jq -r '.message // ""')
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // "default"')
+STOP_ACTIVE=$(echo "$INPUT" | jq -r '.stop_hook_active // false')
+LAST_ASSISTANT=$(echo "$INPUT" | jq -r '.last_assistant_message // ""' | tr '\n' ' ')
+
+# A Stop hook that already triggered a continuation re-fires with this set — we
+# never block, but exit cleanly if we ever see it (docs-recommended hygiene).
+[ "$STOP_ACTIVE" = "true" ] && exit 0
+
+# Debounce: collapse near-simultaneous events (e.g. a permission ping immediately
+# followed by a Stop) into one, per session. Off with NOTIFY_DEBOUNCE_SECONDS=0.
+DEBOUNCE="${NOTIFY_DEBOUNCE_SECONDS:-6}"
+if [ "$DEBOUNCE" -gt 0 ] 2>/dev/null; then
+  MARKER="${TMPDIR:-/tmp}/telegram-notify-$(printf '%s' "$SESSION_ID" | tr -c 'A-Za-z0-9' '_').ts"
+  NOW=$(date +%s 2>/dev/null || echo 0)
+  LAST=0; [ -f "$MARKER" ] && LAST=$(cat "$MARKER" 2>/dev/null || echo 0)
+  if [ "$NOW" -gt 0 ] && [ $((NOW - LAST)) -lt "$DEBOUNCE" ]; then exit 0; fi
+  [ "$NOW" -gt 0 ] && printf '%s' "$NOW" > "$MARKER"
+fi
 
 LAST_MSG=""
 if [ -f "$TRANSCRIPT_PATH" ]; then
   LAST_MSG=$(jq -rs '[.[] | select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text] | last // ""' "$TRANSCRIPT_PATH" 2>/dev/null | tr '\n' ' ')
 fi
 
+# HEADER = message text; STATUS/GLYPH = the status shown on the photo swatch.
 if [ "$HOOK_EVENT" = "Stop" ]; then
-  HEADER="✅ finished"
-  PROMPT_LINE="${LAST_MSG:-Task complete}"
+  HEADER="✅ done"; STATUS="done"; GLYPH="√"
+  PROMPT_LINE="${LAST_ASSISTANT:-${LAST_MSG:-Task complete}}"
 elif [ "$NOTIFICATION_TYPE" = "permission_prompt" ]; then
-  HEADER="🔐 needs permission"
+  HEADER="🔐 needs permission"; STATUS="answer"; GLYPH="?"
   PROMPT_LINE="${SESSION_MSG:-Waiting for tool approval}"
 else
-  HEADER="⏳ waiting for you"
+  HEADER="⏳ waiting for you"; STATUS="idle"; GLYPH="…"
   PROMPT_LINE="${SESSION_MSG:-${LAST_MSG:-Idle and waiting for input}}"
 fi
 
@@ -253,10 +283,10 @@ send_text() {
 SENT=0
 if [ "$NOTIFY_MODE" = "photo" ] && [ -n "$HEXCLEAN" ]; then
   NAMESLUG=$(printf '%s' "$MACHINE_NAME" | tr -c 'A-Za-z0-9' '_')
-  # "-n" (name-only) marks the current swatch scheme; bumping it regenerates
-  # cached swatches when the drawing changes.
-  SWATCH="${SWATCH_FILE:-$HOME/.claude/scripts/swatch-${HEXCLEAN}-${NAMESLUG}-n.png}"
-  if ensure_swatch "$HEXCLEAN" "$MACHINE_NAME" "$SWATCH"; then
+  # Cache key includes the status so each state (done/answer/idle) has its own
+  # swatch; the scheme suffix bumps the cache when the drawing changes.
+  SWATCH="${SWATCH_FILE:-$HOME/.claude/scripts/swatch-${HEXCLEAN}-${NAMESLUG}-${STATUS}.png}"
+  if ensure_swatch "$HEXCLEAN" "$MACHINE_NAME" "$SWATCH" "$GLYPH"; then
     RESP=$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto" \
       -F chat_id="$CHAT_ID" -F parse_mode="MarkdownV2" \
       -F photo=@"$SWATCH" --form-string caption="$TEXT")

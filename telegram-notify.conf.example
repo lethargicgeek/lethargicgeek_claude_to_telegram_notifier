@@ -39,6 +39,11 @@ WORK_EMOJI_REPEAT="9"    # how many times to repeat the emoji
 # to Telegram limits: <=3800 in text mode, <=850 in photo mode (caption limit).
 MAX_MSG_CHARS="1200"
 
+# Collapse near-simultaneous notifications (per session) into one, so a
+# permission ping immediately followed by a Stop doesn't double-notify. Seconds;
+# set 0 to disable.
+NOTIFY_DEBOUNCE_SECONDS="6"
+
 # Optional: force a specific glyph in TEXT mode, ignoring MACHINE_HEX. Choices:
 #   🟥 🟧 🟨 🟩 🟦 🟪 🟫 ⬛ ⬜
 # MACHINE_EMOJI="🟦"
