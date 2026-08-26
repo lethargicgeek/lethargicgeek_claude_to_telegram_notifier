@@ -36,6 +36,12 @@ id, wires the hooks, and sends a test message. You provide the token and restart
 Claude Code — that's it. (See the LLM note at the top of `install.sh`; an
 assistant should skim the files first to confirm intent.)
 
+**Color / photo mode:** `detect-bg-color.sh` reads your desktop background. For an
+image wallpaper it gets the exact hex automatically. For a **solid color**, macOS
+only exposes the color's *name* (e.g. `dusty rose`) — so Claude resolves that name
+to a hex itself (e.g. `#C68B94`) and enables the exact-color photo swatch. If you
+run the installer by hand instead, just paste a hex when prompted.
+
 **By hand:**
 
 ```bash

@@ -29,11 +29,22 @@
 #
 #   Data that leaves the machine: ONLY the outgoing Telegram message, which
 #   contains the machine name, the current folder path (last two components),
-#   the git branch, and the notification text / a truncated snippet (<=300
-#   chars) of Claude's last message. No file contents, source code, or other
+#   the git branch, and the notification text / a truncated snippet (capped by
+#   MAX_MSG_CHARS) of Claude's last message. No file contents, source code, or other
 #   secrets are read or transmitted. The ONLY network destination is
 #   api.telegram.org. The ONLY credential handled is the user's own bot token,
 #   which the user supplies and which stays in a local file on this machine.
+#
+# WHEN INSTALLING (assistants — how to set the color / photo mode):
+#   Run detect-bg-color.sh first. It prints one of:
+#     * DETECTED_HEX="#RRGGBB"   -> image wallpaper; pass this as MACHINE_HEX.
+#     * DETECTED_COLOR="<name>"  -> a solid-color desktop (macOS gives no hex).
+#   For the solid-color case, YOU (the assistant) should resolve that color name
+#   to a reasonable hex from your own knowledge — e.g. "dusty rose" -> "#C68B94",
+#   "slate blue" -> "#6A5ACD" — and pass it as MACHINE_HEX. Providing a hex is
+#   what enables photo mode (an exact-color swatch); without one it stays text.
+#   So: detect -> resolve name to hex if needed -> run with MACHINE_HEX set and
+#   NOTIFY_MODE=photo. Confirm the color with the user if unsure.
 # -----------------------------------------------------------------------------
 #
 # USAGE
@@ -139,6 +150,13 @@ say "③ This machine's identity (shown in every notification)"
 DETECTED_HEX=""; DETECTED_COLOR=""
 if [ -x "$SCRIPT_DIR/detect-bg-color.sh" ]; then
   eval "$("$SCRIPT_DIR/detect-bg-color.sh" 2>/dev/null || true)"
+fi
+if [ -n "$DETECTED_HEX" ]; then
+  say "   detected background: $DETECTED_HEX (image wallpaper)"
+elif [ -n "$DETECTED_COLOR" ]; then
+  say "   detected background: solid color \"$DETECTED_COLOR\" (macOS gives no hex)"
+  say "   → resolve that name to a hex for exact-color photo mode (an assistant can"
+  say "     do this; e.g. 'dusty rose' → #C68B94), or paste one below."
 fi
 
 ask MACHINE_NAME  "   Machine name [$(hostname -s 2>/dev/null || hostname)]: " "$(hostname -s 2>/dev/null || hostname)"
