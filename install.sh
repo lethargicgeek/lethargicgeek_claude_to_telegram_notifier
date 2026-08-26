@@ -35,16 +35,12 @@
 #   api.telegram.org. The ONLY credential handled is the user's own bot token,
 #   which the user supplies and which stays in a local file on this machine.
 #
-# WHEN INSTALLING (assistants — how to set the color / photo mode):
-#   Run detect-bg-color.sh first. It prints one of:
-#     * DETECTED_HEX="#RRGGBB"   -> image wallpaper; pass this as MACHINE_HEX.
-#     * DETECTED_COLOR="<name>"  -> a solid-color desktop (macOS gives no hex).
-#   For the solid-color case, YOU (the assistant) should resolve that color name
-#   to a reasonable hex from your own knowledge — e.g. "dusty rose" -> "#C68B94",
-#   "slate blue" -> "#6A5ACD" — and pass it as MACHINE_HEX. Providing a hex is
-#   what enables photo mode (an exact-color swatch); without one it stays text.
-#   So: detect -> resolve name to hex if needed -> run with MACHINE_HEX set and
-#   NOTIFY_MODE=photo. Confirm the color with the user if unsure.
+# WHEN INSTALLING (assistants — the color / photo mode):
+#   The installer prompts for the machine's color as a hex (MACHINE_HEX). Ask the
+#   user what color to use for this machine. If they give a color by name, you may
+#   resolve it to a hex yourself (e.g. "dusty rose" -> "#C68B94"). Providing a hex
+#   enables photo mode (an exact-color swatch); without one it stays text. This
+#   tool does NOT read the desktop/wallpaper — the color always comes from the user.
 # -----------------------------------------------------------------------------
 #
 # USAGE
@@ -142,29 +138,15 @@ fi
 
 # --- 3. This machine's display identity -------------------------------------
 say "③ This machine's identity (shown in every notification)"
-
-# Try to auto-detect the desktop background color (macOS). For an image
-# wallpaper this yields an exact hex; for a solid color it yields the color's
-# name (macOS exposes no hex for solids). Detected values become the prompt
-# defaults, which you can accept or override.
-DETECTED_HEX=""; DETECTED_COLOR=""
-if [ -x "$SCRIPT_DIR/detect-bg-color.sh" ]; then
-  eval "$("$SCRIPT_DIR/detect-bg-color.sh" 2>/dev/null || true)"
-fi
-if [ -n "$DETECTED_HEX" ]; then
-  say "   detected background: $DETECTED_HEX (image wallpaper)"
-elif [ -n "$DETECTED_COLOR" ]; then
-  say "   detected background: solid color \"$DETECTED_COLOR\" (macOS gives no hex)"
-  say "   → resolve that name to a hex for exact-color photo mode (an assistant can"
-  say "     do this; e.g. 'dusty rose' → #C68B94), or paste one below."
-fi
+say "   Pick a color for this machine — enter a hex like #E06C75 (photo mode shows"
+say "   an exact-color swatch). Leave it blank for a plain text notification."
 
 ask MACHINE_NAME  "   Machine name [$(hostname -s 2>/dev/null || hostname)]: " "$(hostname -s 2>/dev/null || hostname)"
-ask MACHINE_COLOR "   Color name${DETECTED_COLOR:+ [$DETECTED_COLOR]}: " "$DETECTED_COLOR"
-ask MACHINE_HEX   "   Background hex${DETECTED_HEX:+ [$DETECTED_HEX]}: " "$DETECTED_HEX"
+ask MACHINE_HEX   "   Color hex for this machine (e.g. #E06C75), blank for none: " ""
+ask MACHINE_COLOR "   Optional color label (for your reference only) []: " ""
 ask MACHINE_ICON  "   Machine icon emoji (e.g. 🖥️) []: " ""
-# Default to photo mode when we have an exact hex, else text.
-ask NOTIFY_MODE   "   Mode — 'photo' (exact-color image) or 'text' [${MACHINE_HEX:+photo}${MACHINE_HEX:-text}]: " "$([ -n "${MACHINE_HEX:-}" ] && echo photo || echo text)"
+# Photo mode when a hex was given (exact-color swatch), else plain text.
+ask NOTIFY_MODE   "   Mode — 'photo' (exact-color image) or 'text' [$([ -n "${MACHINE_HEX:-}" ] && echo photo || echo text)]: " "$([ -n "${MACHINE_HEX:-}" ] && echo photo || echo text)"
 
 # --- 4. Write the config (secrets live here; chmod 600; never committed) -----
 say "④ Writing $CONF"

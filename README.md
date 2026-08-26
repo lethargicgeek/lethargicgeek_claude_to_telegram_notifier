@@ -36,11 +36,10 @@ id, wires the hooks, and sends a test message. You provide the token and restart
 Claude Code — that's it. (See the LLM note at the top of `install.sh`; an
 assistant should skim the files first to confirm intent.)
 
-**Color / photo mode:** `detect-bg-color.sh` reads your desktop background. For an
-image wallpaper it gets the exact hex automatically. For a **solid color**, macOS
-only exposes the color's *name* (e.g. `dusty rose`) — so Claude resolves that name
-to a hex itself (e.g. `#C68B94`) and enables the exact-color photo swatch. If you
-run the installer by hand instead, just paste a hex when prompted.
+**Color / photo mode:** the installer asks what color to use for this machine —
+enter a hex (e.g. `#E06C75`) to get an exact-color photo swatch, or leave it blank
+for a plain text notification. If you tell Claude a color by name, it can resolve
+it to a hex for you. (Nothing reads your desktop; the color always comes from you.)
 
 **By hand:**
 
@@ -90,25 +89,6 @@ neither is present (or a send fails) it falls back to a text alert.
 
 `MACHINE_COLOR` is now just a human label you can keep in your config for
 reference / background detection — it is not shown in messages.
-
-## Auto-detecting the background color (macOS)
-
-`install.sh` runs `detect-bg-color.sh` to pre-fill the color from your desktop
-wallpaper:
-
-- **Image wallpaper** → the exact **average color** (a hex) is detected and
-  offered as the default; photo mode is preselected.
-- **Solid color** → macOS stores only the color's **name** (e.g. `dusty rose`),
-  not an RGB value, so the name is auto-filled and you confirm/paste the hex.
-
-You can always override the detected value. Run it standalone anytime:
-
-```bash
-./detect-bg-color.sh            # inspect the live desktop
-./detect-bg-color.sh img.jpg    # average a specific image
-```
-
-(macOS only; it's read-only and makes no network calls.)
 
 ## Per-machine icon
 
@@ -268,10 +248,10 @@ bash update.sh          # git pull + refresh scripts + re-check hooks
 # then restart Claude Code
 ```
 
-`update.sh` pulls the latest, copies the refreshed `telegram-notify.sh` /
-`detect-bg-color.sh` into `~/.claude/scripts/`, and re-ensures the hooks — while
-**leaving your `telegram-notify.conf` (token + identity) and swatch cache
-untouched.** New config options always have defaults, so old configs keep working.
+`update.sh` pulls the latest, copies the refreshed `telegram-notify.sh` into
+`~/.claude/scripts/`, and re-ensures the hooks — while **leaving your
+`telegram-notify.conf` (token + identity) and swatch cache untouched.** New config
+options always have defaults, so old configs keep working.
 
 ## Adding another machine later
 
@@ -295,7 +275,6 @@ untouched.** New config options always have defaults, so old configs keep workin
 
 - `install.sh` — one-command installer (prereq check, token/chat-id, hooks, test)
 - `update.sh` — pull latest + refresh scripts/hooks (keeps your config)
-- `detect-bg-color.sh` — macOS desktop-background color detector (used by install.sh)
 - `telegram-notify.sh` — the notifier script (config-driven, identical on all machines)
 - `telegram-notify.conf.example` — config template (placeholders)
 - `telegram-notify.conf.photo-example` — filled example: photo mode + swatch + fingerprint

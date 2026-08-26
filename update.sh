@@ -7,8 +7,7 @@
 #
 # What it does:
 #   • git pull the repo checkout this script lives in
-#   • copy the updated telegram-notify.sh (+ detect-bg-color.sh) into
-#     ~/.claude/scripts/
+#   • copy the updated telegram-notify.sh into ~/.claude/scripts/
 #   • re-ensure the Notification hooks in settings.json (idempotent)
 #
 # What it does NOT touch:
@@ -44,7 +43,8 @@ say "② Updating scripts in $SCRIPTS_DIR"
 mkdir -p "$SCRIPTS_DIR"
 cp "$SCRIPT_DIR/telegram-notify.sh" "$SCRIPTS_DIR/telegram-notify.sh"
 chmod +x "$SCRIPTS_DIR/telegram-notify.sh"
-[ -f "$SCRIPT_DIR/detect-bg-color.sh" ] && { cp "$SCRIPT_DIR/detect-bg-color.sh" "$SCRIPTS_DIR/"; chmod +x "$SCRIPTS_DIR/detect-bg-color.sh"; }
+# Clean up the old desktop-detector if a previous version installed it.
+rm -f "$SCRIPTS_DIR/detect-bg-color.sh"
 
 if [ ! -f "$CONF" ]; then
   warn "No config at $CONF — this machine isn't set up yet. Run install.sh instead."
