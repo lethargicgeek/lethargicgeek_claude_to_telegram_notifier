@@ -204,14 +204,17 @@ LAST_ASSISTANT=$(echo "$INPUT" | jq -r '.last_assistant_message // ""' | tr '\n'
 [ "$STOP_ACTIVE" = "true" ] && exit 0
 
 # Suppress mid-task "done" pings from the orchestrator. When the main agent runs
-# background subagents, each one finishing wakes the main agent for a short
+# background SUBAGENTS, each one finishing wakes the main agent for a short
 # narration turn, and every such turn ends with its own Stop event. We only want
-# the FINAL stop — the one where no background work is still running. So on a
-# Stop, if any background task is still running, stay quiet. (Set
+# the FINAL stop. So on a Stop, if a background *subagent* is still running, stay
+# quiet. We deliberately scope this to type=="subagent" ONLY — long-running
+# processes Claude launched (e.g. `mix phx.server`, a dev server, a watcher) are a
+# different background-task type and must NOT silence notifications; otherwise
+# you'd hear nothing the whole time your server is up. (Set
 # NOTIFY_IGNORE_RUNNING_SUBAGENTS=0 to notify on every stop regardless.)
 if [ "$HOOK_EVENT" = "Stop" ] && [ "${NOTIFY_IGNORE_RUNNING_SUBAGENTS:-1}" = "1" ]; then
-  RUNNING_BG=$(echo "$INPUT" | jq -r '[.background_tasks[]? | select(.status=="running")] | length' 2>/dev/null || echo 0)
-  [ "${RUNNING_BG:-0}" -gt 0 ] && exit 0
+  RUNNING_SUB=$(echo "$INPUT" | jq -r '[.background_tasks[]? | select(.type=="subagent" and .status=="running")] | length' 2>/dev/null || echo 0)
+  [ "${RUNNING_SUB:-0}" -gt 0 ] && exit 0
 fi
 
 # Debounce: collapse near-simultaneous events (e.g. a permission ping immediately
