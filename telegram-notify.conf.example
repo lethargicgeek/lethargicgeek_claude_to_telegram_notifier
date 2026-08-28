@@ -44,6 +44,11 @@ MAX_MSG_CHARS="1200"
 # set 0 to disable.
 NOTIFY_DEBOUNCE_SECONDS="6"
 
+# Suppress a main-agent "done" (Stop) while background subagents are still
+# running, so orchestration narration doesn't spam you — you only get the final
+# stop. Set 0 to notify on every stop regardless.
+NOTIFY_IGNORE_RUNNING_SUBAGENTS="1"
+
 # Optional: force a specific glyph in TEXT mode, ignoring MACHINE_HEX. Choices:
 #   🟥 🟧 🟨 🟩 🟦 🟪 🟫 ⬛ ⬜
 # MACHINE_EMOJI="🟦"

@@ -155,10 +155,14 @@ The hooks (in `settings-hooks-snippet.json`) listen to three Claude Code events:
 | `Notification` | `idle_prompt` | idle ~60s, waiting on your input | `…` |
 | `Stop` | (any) | the **main agent** finished its turn | `√` |
 
-`Stop` fires **only for the top-level agent** — Task-tool subagents fire a
-separate `SubagentStop` event, which is intentionally **not** hooked, so you never
-get pinged for subagent completions. `Stop` also never fires on an Esc-interrupt
-(API errors fire `StopFailure`).
+`Stop` fires for the **main agent** (subagents fire `SubagentStop`, which is not
+hooked). But note: when the main agent runs **background subagents**, each one
+finishing wakes the main agent for a brief narration turn, and every such turn
+ends with its own `Stop`. To avoid a burst of premature "done" pings, a `Stop` is
+**suppressed while any background task is still running** — you only get the final
+stop, once all background work has finished. Set
+`NOTIFY_IGNORE_RUNNING_SUBAGENTS=0` to notify on every stop regardless. `Stop`
+also never fires on an Esc-interrupt (API errors fire `StopFailure`).
 
 A per-session **debounce** (`NOTIFY_DEBOUNCE_SECONDS`, default 6) collapses
 near-simultaneous events so e.g. a permission ping immediately followed by a
