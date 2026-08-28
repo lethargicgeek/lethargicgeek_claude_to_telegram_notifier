@@ -164,9 +164,15 @@ stop, once all background work has finished. Set
 `NOTIFY_IGNORE_RUNNING_SUBAGENTS=0` to notify on every stop regardless. `Stop`
 also never fires on an Esc-interrupt (API errors fire `StopFailure`).
 
+**Trailing coalesce** (`NOTIFY_COALESCE_SECONDS`, default 8) makes `Stop` pings
+reliable even though `background_tasks` under-reports: a `Stop` isn't sent
+immediately — it waits a few seconds, and if another `Stop` arrives first, only
+the last one sends. A burst of subagent-narration stops thus collapses into a
+single "done" ping. Cost: `Stop` pings arrive a few seconds late (set `0` to send
+immediately). Permission/idle pings are always immediate.
+
 A per-session **debounce** (`NOTIFY_DEBOUNCE_SECONDS`, default 6) collapses
-near-simultaneous events so e.g. a permission ping immediately followed by a
-`Stop` doesn't double-notify.
+near-simultaneous **non-Stop** events (e.g. permission + idle) into one.
 
 ## Reliability
 

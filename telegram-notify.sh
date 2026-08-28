@@ -217,11 +217,41 @@ if [ "$HOOK_EVENT" = "Stop" ] && [ "${NOTIFY_IGNORE_RUNNING_SUBAGENTS:-1}" = "1"
   [ "${RUNNING_SUB:-0}" -gt 0 ] && exit 0
 fi
 
-# Debounce: collapse near-simultaneous events (e.g. a permission ping immediately
-# followed by a Stop) into one, per session. Off with NOTIFY_DEBOUNCE_SECONDS=0.
+SESSION_SLUG=$(printf '%s' "$SESSION_ID" | tr -c 'A-Za-z0-9' '_')
+
+# --- Trailing coalesce for Stop events --------------------------------------
+# The background_tasks snapshot doesn't always list every running subagent, so a
+# burst of narration Stops can still leak through. To collapse them reliably: on
+# a Stop, stamp a per-session marker with a unique token and schedule a DETACHED
+# delayed re-run of ourselves. If a newer Stop lands first, it overwrites the
+# marker, so this delayed run finds a mismatch and stays silent — only the LAST
+# Stop in a burst actually sends. Cost: a small delay on "done" pings. Disable
+# with NOTIFY_COALESCE_SECONDS=0. The re-run sets COALESCE_BYPASS=1 to send now.
+COALESCE="${NOTIFY_COALESCE_SECONDS:-8}"
+if [ "$HOOK_EVENT" = "Stop" ] && [ "${COALESCE_BYPASS:-0}" != "1" ] && [ "$COALESCE" -gt 0 ] 2>/dev/null; then
+  CMARK="${TMPDIR:-/tmp}/telegram-notify-${SESSION_SLUG}.coalesce"
+  TOKEN="$$-$(date +%s 2>/dev/null || echo 0)-${RANDOM}"
+  printf '%s' "$TOKEN" > "$CMARK"
+  PAYLOAD_FILE=$(mktemp "${TMPDIR:-/tmp}/telegram-notify-payload.XXXXXX")
+  printf '%s' "$INPUT" > "$PAYLOAD_FILE"
+  SELF="$0"
+  ( trap '' HUP INT TERM
+    sleep "$COALESCE"
+    if [ "$(cat "$CMARK" 2>/dev/null)" = "$TOKEN" ]; then
+      COALESCE_BYPASS=1 bash "$SELF" < "$PAYLOAD_FILE" >/dev/null 2>&1
+    fi
+    rm -f "$PAYLOAD_FILE"
+  ) </dev/null >/dev/null 2>&1 &
+  disown 2>/dev/null || true
+  exit 0
+fi
+
+# Debounce: collapse near-simultaneous NON-Stop events (e.g. permission + idle)
+# into one, per session. Stop events use the trailing coalesce above instead.
+# Off with NOTIFY_DEBOUNCE_SECONDS=0.
 DEBOUNCE="${NOTIFY_DEBOUNCE_SECONDS:-6}"
-if [ "$DEBOUNCE" -gt 0 ] 2>/dev/null; then
-  MARKER="${TMPDIR:-/tmp}/telegram-notify-$(printf '%s' "$SESSION_ID" | tr -c 'A-Za-z0-9' '_').ts"
+if [ "$HOOK_EVENT" != "Stop" ] && [ "$DEBOUNCE" -gt 0 ] 2>/dev/null; then
+  MARKER="${TMPDIR:-/tmp}/telegram-notify-${SESSION_SLUG}.ts"
   NOW=$(date +%s 2>/dev/null || echo 0)
   LAST=0; [ -f "$MARKER" ] && LAST=$(cat "$MARKER" 2>/dev/null || echo 0)
   if [ "$NOW" -gt 0 ] && [ $((NOW - LAST)) -lt "$DEBOUNCE" ]; then exit 0; fi

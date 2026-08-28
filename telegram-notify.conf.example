@@ -49,6 +49,12 @@ NOTIFY_DEBOUNCE_SECONDS="6"
 # stop. Set 0 to notify on every stop regardless.
 NOTIFY_IGNORE_RUNNING_SUBAGENTS="1"
 
+# Trailing coalesce for "done" (Stop) pings: wait this many seconds before
+# sending; if another Stop arrives first, only the last one sends. Reliably
+# collapses bursts of subagent-narration stops into one ping. Adds this much
+# delay to "done" notifications. Set 0 to send Stop pings immediately.
+NOTIFY_COALESCE_SECONDS="8"
+
 # Optional: force a specific glyph in TEXT mode, ignoring MACHINE_HEX. Choices:
 #   🟥 🟧 🟨 🟩 🟦 🟪 🟫 ⬛ ⬜
 # MACHINE_EMOJI="🟦"
