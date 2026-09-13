@@ -28,8 +28,10 @@ piece of work* pinged you.
 > ```
 >
 > The `🔗` line is the raw clickable `https://claude.ai/code/<session>` URL that
-> opens that exact session. It appears when the session has a cloud id (requires
-> remote control / claude.ai); toggle with `NOTIFY_SHOW_SESSION_LINK`.
+> opens that exact session. It requires the session to have a cloud id (remote
+> control / claude.ai enabled); when it doesn't, the line reads
+> `🔗 no link — remote control not enabled for this session` instead. Toggle the
+> whole line with `NOTIFY_SHOW_SESSION_LINK`.
 
 ## Quick install
 
