@@ -22,13 +22,15 @@ piece of work* pinged you.
 > ⚾⚾⚾⚾⚾⚾⚾⚾⚾
 > 🖥️ mac-mini-03 — 🔐 needs permission
 > 📁 myproject
+> 🔗 Open in Claude Code
 > 🌿 feature/payments-v2
 > ❓ Claude wants to run: git push --force
-> ↩️ cd /path/to/myproject && claude --resume <session-id>
 > ```
 >
-> The `↩️` line is a tap-to-copy command to resume that exact session from the
-> machine it's running on (toggle with `NOTIFY_SHOW_RESUME`).
+> The `🔗 Open in Claude Code` line is a clickable link
+> (`https://claude.ai/code/<session>`) that opens that exact session. It appears
+> when the session has a cloud id (requires remote control / claude.ai); toggle
+> with `NOTIFY_SHOW_SESSION_LINK`.
 
 ## Quick install
 

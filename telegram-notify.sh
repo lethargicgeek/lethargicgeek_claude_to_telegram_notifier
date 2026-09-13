@@ -284,19 +284,25 @@ LAST_MSG="$(trunc "$LAST_MSG" "$MAX_MSG_CHARS")"
 esc() {
   printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/[][_*()~`>#+=|{}.!-]/\\&/g'
 }
-# Inside a MarkdownV2 code span only backslash and backtick need escaping.
-esc_code() {
-  printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/`/\\`/g'
+# Inside a MarkdownV2 link URL, ')' and '\' must be escaped.
+esc_url() {
+  printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/)/\\)/g'
 }
 
-# "How to access this session via Claude Code": the resume command, as a
-# tap-to-copy code span (Telegram copies inline code on tap). The session lives
-# on THIS machine (shown above), so run it there. Disable with NOTIFY_SHOW_RESUME=0.
-RESUME_LINE=""
-if [ "${NOTIFY_SHOW_RESUME:-1}" = "1" ] && [ -n "$SESSION_ID" ] && [ "$SESSION_ID" != "default" ]; then
-  RESUME_CWD="${CWD:-$PWD}"
-  RESUME_CMD="cd $RESUME_CWD && claude --resume $SESSION_ID"
-  RESUME_LINE=$'\n'"↩️ \`$(esc_code "$RESUME_CMD")\`"
+# "Open in Claude Code" link. The claude.ai/code URL uses the cloud session id
+# (bridgeSessionId), which Claude Code records in ~/.claude/sessions/<pid>.json
+# alongside the local sessionId (present when remote control is enabled). We map
+# the hook's session_id -> bridgeSessionId and build the URL. Omitted if there's
+# no bridge id for this session. Disable with NOTIFY_SHOW_SESSION_LINK=0.
+SESSION_LINK_LINE=""
+if [ "${NOTIFY_SHOW_SESSION_LINK:-1}" = "1" ] && [ -n "$SESSION_ID" ] && [ "$SESSION_ID" != "default" ]; then
+  _sessdir="$HOME/.claude/sessions"
+  if ls "$_sessdir"/*.json >/dev/null 2>&1; then
+    BRIDGE=$(jq -rs --arg sid "$SESSION_ID" '[.[] | select(.sessionId==$sid and .bridgeSessionId)] | sort_by(.updatedAt // 0) | last | .bridgeSessionId // empty' "$_sessdir"/*.json 2>/dev/null)
+    if [ -n "$BRIDGE" ]; then
+      SESSION_LINK_LINE=$'\n'"🔗 [Open in Claude Code]($(esc_url "https://claude.ai/code/${BRIDGE}"))"
+    fi
+  fi
 fi
 
 E_NAME=$(esc "$MACHINE_NAME")
@@ -323,7 +329,7 @@ if [ "$WORK_FINGERPRINT" = "1" ]; then
 fi
 
 TEXT="${FP_LINE}${SQUARE_SEG}${ICON_SEG}*${E_NAME}* — ${E_HEADER}
-📁 ${E_PATH}"
+📁 ${E_PATH}${SESSION_LINK_LINE}"
 [ -n "$GIT_BRANCH" ] && TEXT="${TEXT}
 🌿 ${E_BRANCH}"
 TEXT="${TEXT}
@@ -332,12 +338,12 @@ if [ -n "$LAST_MSG" ] && [ "$PROMPT_LINE" != "$LAST_MSG" ]; then
   TEXT="${TEXT}
 💬 ${E_LAST}"
 fi
-TEXT="${TEXT}${RESUME_LINE}"
 
 # --- Send -------------------------------------------------------------------
 send_text() {
   curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-    -d chat_id="$CHAT_ID" -d parse_mode="MarkdownV2" --data-urlencode text="$TEXT" > /dev/null
+    -d chat_id="$CHAT_ID" -d parse_mode="MarkdownV2" \
+    -d disable_web_page_preview=true --data-urlencode text="$TEXT" > /dev/null
 }
 
 SENT=0

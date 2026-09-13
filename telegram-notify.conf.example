@@ -49,10 +49,10 @@ NOTIFY_DEBOUNCE_SECONDS="6"
 # stop. Set 0 to notify on every stop regardless.
 NOTIFY_IGNORE_RUNNING_SUBAGENTS="1"
 
-# Add a tap-to-copy "claude --resume <session>" command to each message, so you
-# can jump back into that exact session from the machine it's running on. Set 0
-# to omit it.
-NOTIFY_SHOW_RESUME="1"
+# Add a clickable "Open in Claude Code" link (https://claude.ai/code/<session>)
+# under the folder line, so you can jump into that exact session. Requires the
+# session to have a cloud id (remote control / claude.ai enabled). Set 0 to omit.
+NOTIFY_SHOW_SESSION_LINK="1"
 
 # Trailing coalesce for "done" (Stop) pings: wait this many seconds before
 # sending; if another Stop arrives first, only the last one sends. Reliably
