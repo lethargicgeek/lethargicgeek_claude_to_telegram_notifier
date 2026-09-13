@@ -24,7 +24,11 @@ piece of work* pinged you.
 > 📁 myproject
 > 🌿 feature/payments-v2
 > ❓ Claude wants to run: git push --force
+> ↩️ cd /path/to/myproject && claude --resume <session-id>
 > ```
+>
+> The `↩️` line is a tap-to-copy command to resume that exact session from the
+> machine it's running on (toggle with `NOTIFY_SHOW_RESUME`).
 
 ## Quick install
 

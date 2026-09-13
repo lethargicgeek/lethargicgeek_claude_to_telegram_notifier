@@ -198,6 +198,7 @@ SESSION_MSG=$(echo "$INPUT" | jq -r '.message // ""')
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // "default"')
 STOP_ACTIVE=$(echo "$INPUT" | jq -r '.stop_hook_active // false')
 LAST_ASSISTANT=$(echo "$INPUT" | jq -r '.last_assistant_message // ""' | tr '\n' ' ')
+CWD=$(echo "$INPUT" | jq -r '.cwd // ""')
 
 # A Stop hook that already triggered a continuation re-fires with this set — we
 # never block, but exit cleanly if we ever see it (docs-recommended hygiene).
@@ -283,6 +284,20 @@ LAST_MSG="$(trunc "$LAST_MSG" "$MAX_MSG_CHARS")"
 esc() {
   printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/[][_*()~`>#+=|{}.!-]/\\&/g'
 }
+# Inside a MarkdownV2 code span only backslash and backtick need escaping.
+esc_code() {
+  printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/`/\\`/g'
+}
+
+# "How to access this session via Claude Code": the resume command, as a
+# tap-to-copy code span (Telegram copies inline code on tap). The session lives
+# on THIS machine (shown above), so run it there. Disable with NOTIFY_SHOW_RESUME=0.
+RESUME_LINE=""
+if [ "${NOTIFY_SHOW_RESUME:-1}" = "1" ] && [ -n "$SESSION_ID" ] && [ "$SESSION_ID" != "default" ]; then
+  RESUME_CWD="${CWD:-$PWD}"
+  RESUME_CMD="cd $RESUME_CWD && claude --resume $SESSION_ID"
+  RESUME_LINE=$'\n'"↩️ \`$(esc_code "$RESUME_CMD")\`"
+fi
 
 E_NAME=$(esc "$MACHINE_NAME")
 E_ICON=$(esc "$MACHINE_ICON")
@@ -317,6 +332,7 @@ if [ -n "$LAST_MSG" ] && [ "$PROMPT_LINE" != "$LAST_MSG" ]; then
   TEXT="${TEXT}
 💬 ${E_LAST}"
 fi
+TEXT="${TEXT}${RESUME_LINE}"
 
 # --- Send -------------------------------------------------------------------
 send_text() {
