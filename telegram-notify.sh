@@ -300,7 +300,10 @@ if [ "${NOTIFY_SHOW_SESSION_LINK:-1}" = "1" ] && [ -n "$SESSION_ID" ] && [ "$SES
   if ls "$_sessdir"/*.json >/dev/null 2>&1; then
     BRIDGE=$(jq -rs --arg sid "$SESSION_ID" '[.[] | select(.sessionId==$sid and .bridgeSessionId)] | sort_by(.updatedAt // 0) | last | .bridgeSessionId // empty' "$_sessdir"/*.json 2>/dev/null)
     if [ -n "$BRIDGE" ]; then
-      SESSION_LINK_LINE=$'\n'"🔗 [Open in Claude Code]($(esc_url "https://claude.ai/code/${BRIDGE}"))"
+      # Show the raw URL as the clickable text. It's wrapped as [url](url) so the
+      # '_' and '.' inside it don't trip MarkdownV2 while still rendering the URL.
+      _sess_url="https://claude.ai/code/${BRIDGE}"
+      SESSION_LINK_LINE=$'\n'"🔗 [$(esc "$_sess_url")]($(esc_url "$_sess_url"))"
     fi
   fi
 fi
